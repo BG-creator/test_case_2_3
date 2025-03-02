@@ -5,52 +5,101 @@ use std::io::Write;
 
 fn main() {
 
-    println!("############ Welcome to Administrator interface ###########");
+    let mut departments: HashMap<String, Vec<String>> = HashMap::new();
+    instructions();
 
-    loop{
-        println!("1.Add User ");
-        println!("2.Add Organization");
-        println!("3.User from the department");
-        println!("4.ALl user");
-        println!("5.Exit");
+    loop {
+        print!("Enter command:");
+        io::stdout().flush().unwrap();
+        let command = get_input();
 
-        let choice = get_input();
-
-        match choice.as_str(){
-            "1" => add_user(),
-            "2" => add_organization(),
-            "3" => add_to_department(),
-            "4" => all_user(),
-            "5" => {
-                println!("EXIT........................");
-                break;
-            }
-            _ => println!("Invalid choice"),
-
+        if command.to_lowercase() == "exit" {
+            println!("Goodbye!");
+            break;
         }
-
-
+        process_command(&command, &mut departments);
     }
 
 }
 
+fn instructions() {
 
-fn add_user(){
-    println!("Add User");
+    println!("###### USER INTERFACE #######");
+    println!("## AVAILABLE COMMANDS : ##");
+    println!("Add <Employee> to <department>");
+    println!("List <department>");
+    println!("List All");
+    println!("Exit");
 }
-fn add_organization(){
-    println!("Add Organization");
+
+fn get_input() -> String {
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).expect("Failed to read line");
+    input.trim().to_string()
 }
-fn add_to_department(){
-    println!("Add To Department");
+
+fn process_command(command: &str, departaments: &mut HashMap<String, Vec<String>>) {
+    let tokens: Vec<&str> = command.split_whitespace().collect();
+    if tokens.is_empty() {
+        return;
+    }
+    match tokens[0].to_lowercase().as_str() {
+        "add" => user_add(&tokens, departaments),
+        "list" => list_all(&tokens, departaments),
+        _ => println!("Invalid command"),
+    }
 }
-fn all_user(){
-    println!("ALL Users");
+fn user_add(tokens: &Vec<&str>, departments: &mut HashMap<String, Vec<String>>) {
+    if tokens.len() < 4 {
+        println!("Invalid format command");
+        return;
+    }
+    if tokens[2].to_lowercase() != "to" {
+        println!("Invalid format use : Add <Employee> to <Department>");
+        return;
+    }
+
+    let  employee = tokens[1].to_string();
+    let department = tokens[3].to_string();
+    departments
+        .entry(department.clone())
+        .or_insert_with(Vec::new)
+        .push(employee.clone());
+    println!("Employee added '{}' to department '{}'", employee, department);
+
 }
-fn get_input()-> String{
-    let mut user_input = String::new();
-    print!("Please enter you choice:");
-    io::stdout().flush().unwrap();
-    io::stdin().read_line(&mut user_input).expect("Failed to read line");
-    user_input.trim().to_string()
+
+fn list_all(tokens: &Vec<&str>, departments: &mut HashMap<String, Vec<String>>) {
+
+    if tokens.len() < 2 {
+        println!("Invalid format command, use: List <Department> or List all");
+        return;
+    }
+    if tokens[1].to_lowercase() == "all" {
+        let mut departament: Vec<String> = departments.keys().cloned().collect();
+        departament.sort();
+        for d in departament {
+            println!("{}", d);
+            let mut employees = departments.get(&d).unwrap().clone();
+            employees.sort();
+            for e in employees {
+                println!("- {}", e);
+            }
+        }
+    }
+    else{
+        let department = tokens[1].to_string();
+        match departments.get(&department) {
+            Some(employess) => {
+                let mut sorted_employees = employess.clone();
+                sorted_employees.sort();
+                println!("Department: '{}'", department);
+                for e in sorted_employees {
+                    println!("- {}", e);
+                }
+                       }
+            None => println!("Department '{}' not found", department),
+        }
+    }
+
 }
